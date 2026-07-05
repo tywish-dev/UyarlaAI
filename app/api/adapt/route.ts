@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
 import { runGroqCompletion } from "@/lib/groqClient";
-import { buildRubricPrompt } from "@/lib/promptTemplates";
+import { buildAdaptDifficultyPrompt } from "@/lib/promptTemplates";
 import { parseJsonResponse } from "@/lib/parseJsonResponse";
 import { mapGroqError } from "@/lib/apiErrors";
-import type { RubricResponse, TaskInput } from "@/types";
+import type { AdaptTaskResponse, TaskInput } from "@/types";
 
 export const runtime = "nodejs";
 
-interface RubricRequestBody {
+interface AdaptRequestBody {
   task: { dimension: string; title: string; description: string };
+  difficultyLevel: number;
   taskInput: TaskInput;
 }
 
-function isValidBody(body: unknown): body is RubricRequestBody {
+function isValidBody(body: unknown): body is AdaptRequestBody {
   if (typeof body !== "object" || body === null) return false;
   const b = body as Record<string, unknown>;
   const task = b.task as Record<string, unknown> | undefined;
@@ -23,6 +24,7 @@ function isValidBody(body: unknown): body is RubricRequestBody {
     typeof task.title === "string" &&
     typeof task.description === "string" &&
     typeof task.dimension === "string" &&
+    typeof b.difficultyLevel === "number" &&
     typeof input === "object" &&
     input !== null &&
     typeof input.learningObjective === "string"
@@ -45,22 +47,26 @@ export async function POST(request: Request) {
   }
 
   try {
-    const prompt = buildRubricPrompt(body.task, body.taskInput);
+    const prompt = buildAdaptDifficultyPrompt(
+      body.task,
+      body.difficultyLevel,
+      body.taskInput
+    );
     const raw = await runGroqCompletion(prompt);
 
-    let parsed: RubricResponse;
+    let parsed: AdaptTaskResponse;
     try {
-      parsed = parseJsonResponse<RubricResponse>(raw);
+      parsed = parseJsonResponse<AdaptTaskResponse>(raw);
     } catch {
       return NextResponse.json(
-        { error: "Rubrik üretilemedi, tekrar deneyin." },
+        { error: "Görev yeniden uyarlanamadı, tekrar deneyin." },
         { status: 502 }
       );
     }
 
-    if (!parsed?.criteria || !Array.isArray(parsed.criteria) || parsed.criteria.length === 0) {
+    if (!parsed?.task || typeof parsed.task.title !== "string") {
       return NextResponse.json(
-        { error: "Rubrik üretilemedi, tekrar deneyin." },
+        { error: "Görev yeniden uyarlanamadı, tekrar deneyin." },
         { status: 502 }
       );
     }

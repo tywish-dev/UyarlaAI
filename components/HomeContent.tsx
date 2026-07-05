@@ -2,39 +2,170 @@
 
 import { useState } from "react";
 import ProfileForm from "@/components/ProfileForm";
+import PromptLibrary from "@/components/PromptLibrary";
 import TaskResultCard from "@/components/TaskResultCard";
-import type { DifferentiatedTask, GenerateTasksResponse, TaskInput } from "@/types";
+import type {
+  AdaptTaskResponse,
+  DifferentiatedTask,
+  GenerateTasksResponse,
+  RubricCriterion,
+  RubricResponse,
+  TaskInput,
+} from "@/types";
+
+interface TaskState {
+  task: DifferentiatedTask;
+  rubric: RubricCriterion[];
+  isReadapting: boolean;
+  isRubricLoading: boolean;
+  error: string | null;
+}
+
+async function readError(response: Response, fallback: string): Promise<string> {
+  const data = (await response.json().catch(() => null)) as { error?: string } | null;
+  return data?.error ?? fallback;
+}
 
 export default function HomeContent() {
-  const [tasks, setTasks] = useState<DifferentiatedTask[]>([]);
+  const [taskInput, setTaskInput] = useState<TaskInput | null>(null);
+  const [extraContext, setExtraContext] = useState("");
+  const [taskStates, setTaskStates] = useState<TaskState[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const updateTaskState = (index: number, patch: Partial<TaskState>) => {
+    setTaskStates((prev) =>
+      prev.map((state, i) => (i === index ? { ...state, ...patch } : state))
+    );
+  };
 
   const handleSubmit = async (input: TaskInput) => {
     setErrorMessage(null);
-    setTasks([]);
+    setTaskStates([]);
+    setTaskInput(input);
 
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({ ...input, extraContext }),
     });
 
     if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as
-        | { error?: string }
-        | null;
-      const message =
-        data?.error ?? "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin.";
+      const message = await readError(
+        response,
+        "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+      );
       setErrorMessage(message);
       throw new Error(message);
     }
 
     const data = (await response.json()) as GenerateTasksResponse;
-    const withDifficulty: DifferentiatedTask[] = data.tasks.map((task) => ({
-      ...task,
-      difficultyLevel: 3,
-    }));
-    setTasks(withDifficulty);
+    setTaskStates(
+      data.tasks.map((task) => ({
+        task: { ...task, difficultyLevel: 3 },
+        rubric: [],
+        isReadapting: false,
+        isRubricLoading: false,
+        error: null,
+      }))
+    );
+  };
+
+  const handleDifficultyChange = (index: number, value: number) => {
+    setTaskStates((prev) =>
+      prev.map((state, i) =>
+        i === index ? { ...state, task: { ...state.task, difficultyLevel: value } } : state
+      )
+    );
+  };
+
+  const handleReadapt = async (index: number) => {
+    if (!taskInput) return;
+    const current = taskStates[index];
+    updateTaskState(index, { isReadapting: true, error: null });
+
+    try {
+      const response = await fetch("/api/adapt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: {
+            dimension: current.task.dimension,
+            title: current.task.title,
+            description: current.task.description,
+          },
+          difficultyLevel: current.task.difficultyLevel,
+          taskInput,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await readError(response, "Görev yeniden uyarlanamadı, tekrar deneyin.");
+        updateTaskState(index, { isReadapting: false, error: message });
+        return;
+      }
+
+      const data = (await response.json()) as AdaptTaskResponse;
+      setTaskStates((prev) =>
+        prev.map((state, i) =>
+          i === index
+            ? {
+                ...state,
+                task: {
+                  ...state.task,
+                  title: data.task.title,
+                  description: data.task.description,
+                },
+                isReadapting: false,
+                error: null,
+              }
+            : state
+        )
+      );
+    } catch {
+      updateTaskState(index, {
+        isReadapting: false,
+        error: "Görev yeniden uyarlanamadı, tekrar deneyin.",
+      });
+    }
+  };
+
+  const handleGenerateRubric = async (index: number) => {
+    if (!taskInput) return;
+    const current = taskStates[index];
+    updateTaskState(index, { isRubricLoading: true, error: null });
+
+    try {
+      const response = await fetch("/api/rubric", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task: {
+            dimension: current.task.dimension,
+            title: current.task.title,
+            description: current.task.description,
+          },
+          taskInput,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await readError(response, "Rubrik üretilemedi, tekrar deneyin.");
+        updateTaskState(index, { isRubricLoading: false, error: message });
+        return;
+      }
+
+      const data = (await response.json()) as RubricResponse;
+      updateTaskState(index, {
+        rubric: data.criteria,
+        isRubricLoading: false,
+        error: null,
+      });
+    } catch {
+      updateTaskState(index, {
+        isRubricLoading: false,
+        error: "Rubrik üretilemedi, tekrar deneyin.",
+      });
+    }
   };
 
   return (
@@ -76,7 +207,10 @@ export default function HomeContent() {
         </div>
       </section>
 
-      <ProfileForm onSubmit={handleSubmit} />
+      <div className="space-y-6">
+        <PromptLibrary value={extraContext} onChange={setExtraContext} />
+        <ProfileForm onSubmit={handleSubmit} />
+      </div>
 
       {errorMessage && (
         <div
@@ -87,15 +221,26 @@ export default function HomeContent() {
         </div>
       )}
 
-      {tasks.length > 0 && (
+      {taskStates.length > 0 && (
         <section className="mt-10">
           <h3 className="mb-1 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
           <p className="mb-5 text-sm text-slate-500">
-            Tomlinson&apos;ın üç boyutuna göre farklılaştırılmış görevler.
+            Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik önerisi
+            alabilirsiniz.
           </p>
           <div className="grid gap-4 lg:grid-cols-3">
-            {tasks.map((task, index) => (
-              <TaskResultCard key={`${task.dimension}-${index}`} task={task} />
+            {taskStates.map((state, index) => (
+              <TaskResultCard
+                key={`${state.task.dimension}-${index}`}
+                task={state.task}
+                onDifficultyChange={(value) => handleDifficultyChange(index, value)}
+                onReadapt={() => handleReadapt(index)}
+                isReadapting={state.isReadapting}
+                rubric={state.rubric}
+                onGenerateRubric={() => handleGenerateRubric(index)}
+                isRubricLoading={state.isRubricLoading}
+                errorMessage={state.error}
+              />
             ))}
           </div>
         </section>
