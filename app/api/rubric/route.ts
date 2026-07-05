@@ -6,6 +6,7 @@ import { mapGroqError } from "@/lib/apiErrors";
 import type { RubricResponse, TaskInput } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface RubricRequestBody {
   task: { dimension: string; title: string; description: string };

@@ -6,6 +6,7 @@ import { mapGroqError } from "@/lib/apiErrors";
 import type { GenerateTasksResponse, TaskInput } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function isValidTaskInput(body: unknown): body is TaskInput {
   if (typeof body !== "object" || body === null) return false;

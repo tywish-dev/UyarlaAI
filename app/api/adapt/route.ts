@@ -6,6 +6,7 @@ import { mapGroqError } from "@/lib/apiErrors";
 import type { AdaptTaskResponse, TaskInput } from "@/types";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface AdaptRequestBody {
   task: { dimension: string; title: string; description: string };

@@ -22,7 +22,6 @@ interface FormErrors {
   subject?: string;
   gradeLevel?: string;
   interestArea?: string;
-  general?: string;
 }
 
 interface ProfileFormProps {
@@ -72,7 +71,6 @@ export default function ProfileForm({ onSubmit }: ProfileFormProps) {
       if (key in next) {
         delete next[key as keyof FormErrors];
       }
-      delete next.general;
       return next;
     });
   };
@@ -102,10 +100,6 @@ export default function ProfileForm({ onSubmit }: ProfileFormProps) {
 
     try {
       await onSubmit(taskInput);
-    } catch {
-      setErrors({
-        general: "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin.",
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -128,15 +122,6 @@ export default function ProfileForm({ onSubmit }: ProfileFormProps) {
       <p className="mt-1 text-sm text-slate-500">
         Kazanım ve öğrenci profilini girerek farklılaştırılmış görevler üretin.
       </p>
-
-      {errors.general && (
-        <div
-          role="alert"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {errors.general}
-        </div>
-      )}
 
       <div className="mt-6 space-y-5">
         <div>
