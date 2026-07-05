@@ -2,15 +2,38 @@
 
 import { useState } from "react";
 import ProfileForm from "@/components/ProfileForm";
-import type { TaskInput } from "@/types";
+import type { DifferentiatedTask, GenerateTasksResponse, TaskInput } from "@/types";
 
 export default function HomeContent() {
-  const [lastSubmitted, setLastSubmitted] = useState<TaskInput | null>(null);
+  const [tasks, setTasks] = useState<DifferentiatedTask[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (input: TaskInput) => {
-    // Faz 3'te /api/generate çağrısı eklenecek
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setLastSubmitted(input);
+    setErrorMessage(null);
+    setTasks([]);
+
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+      const message =
+        data?.error ?? "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin.";
+      setErrorMessage(message);
+      throw new Error(message);
+    }
+
+    const data = (await response.json()) as GenerateTasksResponse;
+    const withDifficulty: DifferentiatedTask[] = data.tasks.map((task) => ({
+      ...task,
+      difficultyLevel: 3,
+    }));
+    setTasks(withDifficulty);
   };
 
   return (
@@ -54,13 +77,35 @@ export default function HomeContent() {
 
       <ProfileForm onSubmit={handleSubmit} />
 
-      {lastSubmitted && (
-        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Form başarıyla gönderildi. AI entegrasyonu Faz 3&apos;te eklenecek.
-          <span className="mt-1 block text-xs text-emerald-700">
-            Konu: {lastSubmitted.subject} · {lastSubmitted.gradeLevel}
-          </span>
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {errorMessage}
         </div>
+      )}
+
+      {tasks.length > 0 && (
+        <section className="mt-10">
+          <h3 className="mb-4 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {tasks.map((task, index) => (
+              <div
+                key={`${task.dimension}-${index}`}
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wide text-primary-700">
+                  {task.dimension}
+                </span>
+                <h4 className="mt-1 font-semibold text-slate-900">{task.title}</h4>
+                <p className="mt-2 whitespace-pre-line text-sm text-slate-600">
+                  {task.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </>
   );
