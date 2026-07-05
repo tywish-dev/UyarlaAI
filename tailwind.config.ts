@@ -9,27 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        primary: {
-          50: "#eff6ff",
-          100: "#dbeafe",
-          200: "#bfdbfe",
-          300: "#93c5fd",
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-          800: "#1e40af",
-          900: "#1e3a8a",
+        base: "var(--bg-base)",
+        surface: "var(--bg-surface)",
+        ink: {
+          DEFAULT: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
         },
-        accent: {
-          50: "#ecfdf5",
-          100: "#d1fae5",
-          500: "#10b981",
-          600: "#059669",
-          700: "#047857",
-        },
+        subtle: "var(--border-subtle)",
+        content: "var(--accent-content)",
+        process: "var(--accent-process)",
+        product: "var(--accent-product)",
+        action: "var(--accent-action)",
+      },
+      fontFamily: {
+        sans: ["var(--font-body)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(23, 26, 33, 0.04), 0 4px 12px rgba(23, 26, 33, 0.06)",
+        "card-hover":
+          "0 2px 4px rgba(23, 26, 33, 0.06), 0 12px 28px rgba(23, 26, 33, 0.12)",
       },
     },
   },
