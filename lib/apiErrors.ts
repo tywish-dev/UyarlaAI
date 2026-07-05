@@ -7,11 +7,11 @@ export interface ApiErrorBody {
 export function mapGroqError(error: unknown): NextResponse<ApiErrorBody> {
   const message = error instanceof Error ? error.message : String(error);
 
-  if (message.includes("GROQ_API_KEY") || message.includes("GROQ_MODEL")) {
+  if (message.includes("GROQ_API_KEY")) {
     return NextResponse.json(
       {
         error:
-          "API anahtarı ayarlanmamış, lütfen .env.local dosyasını kontrol edin.",
+          "GROQ_API_KEY ortam değişkeni ayarlanmamış. Vercel Dashboard > Settings > Environment Variables bölümünden ekleyip yeniden deploy edin.",
       },
       { status: 500 }
     );
@@ -26,7 +26,7 @@ export function mapGroqError(error: unknown): NextResponse<ApiErrorBody> {
     return NextResponse.json(
       {
         error:
-          "API anahtarı geçersiz. Lütfen .env.local dosyasındaki GROQ_API_KEY değerini kontrol edin.",
+          "Groq API anahtarı geçersiz. Vercel ortam değişkenlerindeki GROQ_API_KEY değerini kontrol edin.",
       },
       { status: 401 }
     );
