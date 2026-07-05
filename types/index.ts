@@ -27,6 +27,10 @@ export interface GenerateTasksResponse {
   tasks: Omit<DifferentiatedTask, "difficultyLevel">[];
 }
 
+export interface AdaptTaskResponse {
+  task: Omit<DifferentiatedTask, "difficultyLevel">;
+}
+
 export interface RubricResponse {
   criteria: RubricCriterion[];
 }

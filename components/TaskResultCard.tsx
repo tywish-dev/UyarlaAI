@@ -1,9 +1,18 @@
 "use client";
 
-import type { DifferentiatedTask } from "@/types";
+import type { DifferentiatedTask, RubricCriterion } from "@/types";
+import DifficultySlider from "@/components/DifficultySlider";
+import RubricPreview from "@/components/RubricPreview";
 
 interface TaskResultCardProps {
   task: DifferentiatedTask;
+  onDifficultyChange: (value: number) => void;
+  onReadapt: () => void;
+  isReadapting: boolean;
+  rubric: RubricCriterion[];
+  onGenerateRubric: () => void;
+  isRubricLoading: boolean;
+  errorMessage?: string | null;
 }
 
 const DIMENSION_STYLES: Record<
@@ -33,7 +42,16 @@ const DIMENSION_STYLES: Record<
   },
 };
 
-export default function TaskResultCard({ task }: TaskResultCardProps) {
+export default function TaskResultCard({
+  task,
+  onDifficultyChange,
+  onReadapt,
+  isReadapting,
+  rubric,
+  onGenerateRubric,
+  isRubricLoading,
+  errorMessage,
+}: TaskResultCardProps) {
   const style = DIMENSION_STYLES[task.dimension] ?? DIMENSION_STYLES.içerik;
 
   return (
@@ -55,6 +73,45 @@ export default function TaskResultCard({ task }: TaskResultCardProps) {
         <p className="mt-2 flex-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
           {task.description}
         </p>
+
+        {errorMessage && (
+          <div
+            role="alert"
+            className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+          >
+            {errorMessage}
+          </div>
+        )}
+
+        <DifficultySlider
+          value={task.difficultyLevel}
+          onChange={onDifficultyChange}
+          onReadapt={onReadapt}
+          isLoading={isReadapting}
+        />
+
+        <button
+          type="button"
+          onClick={onGenerateRubric}
+          disabled={isRubricLoading}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isRubricLoading ? (
+            <>
+              <span
+                className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-slate-500 border-t-transparent"
+                aria-hidden="true"
+              />
+              Rubrik hazırlanıyor...
+            </>
+          ) : rubric.length > 0 ? (
+            "Rubriği Yenile"
+          ) : (
+            "Rubrik Öner"
+          )}
+        </button>
+
+        <RubricPreview criteria={rubric} />
       </div>
     </article>
   );
