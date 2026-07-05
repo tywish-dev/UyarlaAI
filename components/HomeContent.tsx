@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProfileForm from "@/components/ProfileForm";
 import PromptLibrary from "@/components/PromptLibrary";
 import TaskResultCard from "@/components/TaskResultCard";
@@ -32,6 +32,14 @@ export default function HomeContent() {
   const [extraContext, setExtraContext] = useState("");
   const [taskStates, setTaskStates] = useState<TaskState[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if ((isGenerating || taskStates.length > 0) && resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isGenerating, taskStates.length]);
 
   const updateTaskState = (index: number, patch: Partial<TaskState>) => {
     setTaskStates((prev) =>
@@ -43,32 +51,37 @@ export default function HomeContent() {
     setErrorMessage(null);
     setTaskStates([]);
     setTaskInput(input);
+    setIsGenerating(true);
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...input, extraContext }),
-    });
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...input, extraContext }),
+      });
 
-    if (!response.ok) {
-      const message = await readError(
-        response,
-        "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+      if (!response.ok) {
+        const message = await readError(
+          response,
+          "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+        );
+        setErrorMessage(message);
+        throw new Error(message);
+      }
+
+      const data = (await response.json()) as GenerateTasksResponse;
+      setTaskStates(
+        data.tasks.map((task) => ({
+          task: { ...task, difficultyLevel: 3 },
+          rubric: [],
+          isReadapting: false,
+          isRubricLoading: false,
+          error: null,
+        }))
       );
-      setErrorMessage(message);
-      throw new Error(message);
+    } finally {
+      setIsGenerating(false);
     }
-
-    const data = (await response.json()) as GenerateTasksResponse;
-    setTaskStates(
-      data.tasks.map((task) => ({
-        task: { ...task, difficultyLevel: 3 },
-        rubric: [],
-        isReadapting: false,
-        isRubricLoading: false,
-        error: null,
-      }))
-    );
   };
 
   const handleDifficultyChange = (index: number, value: number) => {
@@ -222,7 +235,39 @@ export default function HomeContent() {
         </div>
       )}
 
-      {taskStates.length > 0 && (
+      <div ref={resultsRef} className="scroll-mt-6" />
+
+      {isGenerating && (
+        <section className="mt-10" aria-live="polite">
+          <div className="mb-5 flex items-center gap-3">
+            <span
+              className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-medium text-slate-600">
+              Görevler hazırlanıyor...
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <div className="h-4 w-20 rounded-full bg-slate-200" />
+                <div className="mt-3 h-5 w-3/4 rounded bg-slate-200" />
+                <div className="mt-4 space-y-2">
+                  <div className="h-3 w-full rounded bg-slate-100" />
+                  <div className="h-3 w-full rounded bg-slate-100" />
+                  <div className="h-3 w-2/3 rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isGenerating && taskStates.length > 0 && (
         <section className="mt-10">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
