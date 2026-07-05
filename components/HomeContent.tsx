@@ -1,22 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import ProfileForm from "@/components/ProfileForm";
 import PromptLibrary from "@/components/PromptLibrary";
 import TaskResultCard from "@/components/TaskResultCard";
 import ExportButtons from "@/components/ExportButtons";
+import TaskSkeleton from "@/components/TaskSkeleton";
+import ForkDiagram from "@/components/ForkDiagram";
+import { DIMENSION_META } from "@/lib/dimensions";
 import type {
   AdaptTaskResponse,
   DifferentiatedTask,
   GenerateTasksResponse,
-  RubricCriterion,
   RubricResponse,
   TaskInput,
 } from "@/types";
 
 interface TaskState {
   task: DifferentiatedTask;
-  rubric: RubricCriterion[];
+  rubric: RubricResponse["criteria"];
   isReadapting: boolean;
   isRubricLoading: boolean;
   error: string | null;
@@ -66,7 +68,7 @@ export default function HomeContent() {
           "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
         );
         setErrorMessage(message);
-        throw new Error(message);
+        return;
       }
 
       const data = (await response.json()) as GenerateTasksResponse;
@@ -79,6 +81,10 @@ export default function HomeContent() {
           error: null,
         }))
       );
+    } catch {
+      setErrorMessage(
+        "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +93,9 @@ export default function HomeContent() {
   const handleDifficultyChange = (index: number, value: number) => {
     setTaskStates((prev) =>
       prev.map((state, i) =>
-        i === index ? { ...state, task: { ...state.task, difficultyLevel: value } } : state
+        i === index
+          ? { ...state, task: { ...state.task, difficultyLevel: value } }
+          : state
       )
     );
   };
@@ -113,7 +121,10 @@ export default function HomeContent() {
       });
 
       if (!response.ok) {
-        const message = await readError(response, "Görev yeniden uyarlanamadı, tekrar deneyin.");
+        const message = await readError(
+          response,
+          "Görev yeniden uyarlanamadı, tekrar deneyin."
+        );
         updateTaskState(index, { isReadapting: false, error: message });
         return;
       }
@@ -163,7 +174,10 @@ export default function HomeContent() {
       });
 
       if (!response.ok) {
-        const message = await readError(response, "Rubrik üretilemedi, tekrar deneyin.");
+        const message = await readError(
+          response,
+          "Rubrik üretilemedi, tekrar deneyin."
+        );
         updateTaskState(index, { isRubricLoading: false, error: message });
         return;
       }
@@ -184,52 +198,61 @@ export default function HomeContent() {
 
   return (
     <>
-      <section className="mb-10 text-center sm:text-left">
-        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-          Farklılaştırılmış Görev Üretin
-        </h2>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          Kazanım ve öğrenci profilini girerek Tomlinson&apos;ın üç boyutuna göre
-          (içerik, süreç, ürün) yapay zeka destekli görevler oluşturun.
-        </p>
-      </section>
-
-      <section className="mb-12 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-            İçerik
-          </span>
-          <p className="mt-1 text-sm text-blue-900">
-            Konunun sunum şekli öğrenciye göre uyarlanır
-          </p>
-        </div>
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Süreç
-          </span>
-          <p className="mt-1 text-sm text-emerald-900">
-            Öğrenme etkinliğinin türü farklılaştırılır
-          </p>
-        </div>
-        <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-            Ürün
-          </span>
-          <p className="mt-1 text-sm text-teal-900">
-            Öğrencinin ortaya koyacağı çıktı türü çeşitlenir
-          </p>
-        </div>
+      <section className="mb-10 grid gap-3 sm:grid-cols-3">
+        {(
+          [
+            {
+              key: "içerik" as const,
+              desc: "Konunun sunum şekli öğrenciye göre uyarlanır",
+            },
+            {
+              key: "süreç" as const,
+              desc: "Öğrenme etkinliğinin türü farklılaştırılır",
+            },
+            {
+              key: "ürün" as const,
+              desc: "Öğrencinin ortaya koyacağı çıktı türü çeşitlenir",
+            },
+          ]
+        ).map(({ key, desc }) => {
+          const meta = DIMENSION_META[key];
+          return (
+            <div
+              key={key}
+              className="rounded-xl border border-subtle bg-surface p-4 shadow-card"
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: meta.color }}
+                  aria-hidden="true"
+                />
+                <span
+                  className="font-mono text-xs font-semibold uppercase tracking-[0.08em]"
+                  style={{ color: meta.color }}
+                >
+                  {meta.label}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm text-ink-secondary">{desc}</p>
+            </div>
+          );
+        })}
       </section>
 
       <div className="space-y-6">
-        <PromptLibrary value={extraContext} onChange={setExtraContext} />
-        <ProfileForm onSubmit={handleSubmit} />
+        <PromptLibrary
+          value={extraContext}
+          onChange={setExtraContext}
+          disabled={isGenerating}
+        />
+        <ProfileForm onSubmit={handleSubmit} isGenerating={isGenerating} />
       </div>
 
       {errorMessage && (
         <div
           role="alert"
-          className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
         >
           {errorMessage}
         </div>
@@ -239,29 +262,12 @@ export default function HomeContent() {
 
       {isGenerating && (
         <section className="mt-10" aria-live="polite">
-          <div className="mb-5 flex items-center gap-3">
-            <span
-              className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"
-              aria-hidden="true"
-            />
-            <p className="text-sm font-medium text-slate-600">
-              Görevler hazırlanıyor...
-            </p>
+          <div className="mb-6">
+            <ForkDiagram />
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="h-4 w-20 rounded-full bg-slate-200" />
-                <div className="mt-3 h-5 w-3/4 rounded bg-slate-200" />
-                <div className="mt-4 space-y-2">
-                  <div className="h-3 w-full rounded bg-slate-100" />
-                  <div className="h-3 w-full rounded bg-slate-100" />
-                  <div className="h-3 w-2/3 rounded bg-slate-100" />
-                </div>
-              </div>
+              <TaskSkeleton key={i} index={i} />
             ))}
           </div>
         </section>
@@ -271,10 +277,13 @@ export default function HomeContent() {
         <section className="mt-10">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h3 className="mb-1 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
-              <p className="text-sm text-slate-500">
-                Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik önerisi
-                alabilirsiniz.
+              <span className="eyebrow">Sonuç</span>
+              <h3 className="mt-1 font-display text-xl font-bold text-ink">
+                Üretilen Görevler
+              </h3>
+              <p className="mt-1 text-sm text-ink-secondary">
+                Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik
+                önerisi alabilirsiniz.
               </p>
             </div>
             {taskInput && (
@@ -289,17 +298,24 @@ export default function HomeContent() {
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             {taskStates.map((state, index) => (
-              <TaskResultCard
+              <div
                 key={`${state.task.dimension}-${index}`}
-                task={state.task}
-                onDifficultyChange={(value) => handleDifficultyChange(index, value)}
-                onReadapt={() => handleReadapt(index)}
-                isReadapting={state.isReadapting}
-                rubric={state.rubric}
-                onGenerateRubric={() => handleGenerateRubric(index)}
-                isRubricLoading={state.isRubricLoading}
-                errorMessage={state.error}
-              />
+                className="animate-card-enter"
+                style={{ animationDelay: `${index * 90}ms` } as CSSProperties}
+              >
+                <TaskResultCard
+                  task={state.task}
+                  onDifficultyChange={(value) =>
+                    handleDifficultyChange(index, value)
+                  }
+                  onReadapt={() => handleReadapt(index)}
+                  isReadapting={state.isReadapting}
+                  rubric={state.rubric}
+                  onGenerateRubric={() => handleGenerateRubric(index)}
+                  isRubricLoading={state.isRubricLoading}
+                  errorMessage={state.error}
+                />
+              </div>
             ))}
           </div>
         </section>

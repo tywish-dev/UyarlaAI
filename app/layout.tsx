@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   display: "swap",
+  variable: "--font-body",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -19,33 +32,37 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
-      <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900 antialiased`}>
+    <html
+      lang="tr"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="min-h-screen bg-base font-sans text-ink antialiased">
         <div className="flex min-h-screen flex-col">
-          <header className="border-b border-slate-200 bg-white shadow-sm">
-            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600 text-lg font-bold text-white">
-                  U
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-slate-900">UyarlaAI</h1>
-                  <p className="text-xs text-slate-500">
-                    Farklılaştırılmış BT Görev Üretici
-                  </p>
-                </div>
+          <header className="sticky top-0 z-20 border-b border-subtle bg-surface/80 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5 sm:px-6">
+              <div className="flex items-center gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 items-center gap-[3px] rounded-md bg-action px-2"
+                >
+                  <span className="h-3 w-1 rounded-full bg-content" />
+                  <span className="h-4 w-1 rounded-full bg-process" />
+                  <span className="h-2.5 w-1 rounded-full bg-product" />
+                </span>
+                <span className="font-display text-lg font-bold tracking-tight text-ink">
+                  UyarlaAI
+                </span>
               </div>
-              <span className="hidden rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 sm:inline-block">
-                Tomlinson Çerçevesi
-              </span>
+              <span className="eyebrow hidden sm:inline">Tomlinson Çerçevesi</span>
             </div>
           </header>
 
           <main className="flex-1">{children}</main>
 
-          <footer className="border-t border-slate-200 bg-white py-4">
-            <div className="mx-auto max-w-6xl px-4 text-center text-xs text-slate-500 sm:px-6">
-              BÖTE — Bilgisayar Eğitiminde Öğretim Yöntemleri 1 · Groq AI ile güçlendirilmiştir
+          <footer className="border-t border-subtle bg-surface py-4">
+            <div className="mx-auto max-w-5xl px-4 text-center text-xs text-ink-secondary sm:px-6">
+              BÖTE — Bilgisayar Eğitiminde Öğretim Yöntemleri 1 · Groq AI ile
+              güçlendirilmiştir
             </div>
           </footer>
         </div>

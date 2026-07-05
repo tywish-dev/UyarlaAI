@@ -9,7 +9,11 @@ interface PromptLibraryProps {
   disabled?: boolean;
 }
 
-export default function PromptLibrary({ value, onChange, disabled }: PromptLibraryProps) {
+export default function PromptLibrary({
+  value,
+  onChange,
+  disabled,
+}: PromptLibraryProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const handleSelect = (id: string, content: string) => {
@@ -23,29 +27,33 @@ export default function PromptLibrary({ value, onChange, disabled }: PromptLibra
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-      <h3 className="text-lg font-semibold text-slate-900">Prompt Kütüphanesi</h3>
-      <p className="mt-1 text-sm text-slate-500">
-        Hazır bir şablon seçip düzenleyebilir veya kendi talimatınızı yazabilirsiniz.
-        Bu talimat üretim promptuna ek bağlam olarak eklenir. (İsteğe bağlı)
+    <div className="rounded-2xl border border-subtle bg-surface p-6 shadow-card sm:p-8">
+      <span className="eyebrow">Prompt Kütüphanesi</span>
+      <p className="mt-1.5 text-sm text-ink-secondary">
+        Hazır bir şablon seç veya kendi talimatını yaz. Bu talimat üretim
+        promptuna ek bağlam olarak eklenir. (İsteğe bağlı)
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {PROMPT_TEMPLATES.map((template) => (
-          <button
-            key={template.id}
-            type="button"
-            disabled={disabled}
-            onClick={() => handleSelect(template.id, template.content)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              selectedId === template.id
-                ? "border-primary-500 bg-primary-50 text-primary-800"
-                : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300"
-            }`}
-          >
-            {template.label}
-          </button>
-        ))}
+        {PROMPT_TEMPLATES.map((template) => {
+          const active = selectedId === template.id;
+          return (
+            <button
+              key={template.id}
+              type="button"
+              disabled={disabled}
+              aria-pressed={active}
+              onClick={() => handleSelect(template.id, template.content)}
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-action/40 disabled:cursor-not-allowed disabled:opacity-60 ${
+                active
+                  ? "border-action bg-action text-white"
+                  : "border-subtle bg-surface text-ink-secondary hover:border-ink-secondary/40 hover:text-ink"
+              }`}
+            >
+              {template.label}
+            </button>
+          );
+        })}
       </div>
 
       <textarea
@@ -57,7 +65,7 @@ export default function PromptLibrary({ value, onChange, disabled }: PromptLibra
           setSelectedId(null);
         }}
         placeholder="Örn: Görevleri görsel öğrenenler için uyarla, adım adım yönergeler ekle..."
-        className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm transition-colors hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 w-full resize-y rounded-lg border border-subtle bg-surface px-3.5 py-2.5 text-sm text-ink transition-colors placeholder:text-ink-secondary/60 hover:border-ink-secondary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-action/40 disabled:cursor-not-allowed disabled:opacity-60"
       />
     </div>
   );

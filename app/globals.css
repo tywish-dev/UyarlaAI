@@ -3,17 +3,182 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --bg-base: #f7f8fa;
+  --bg-surface: #ffffff;
+  --text-primary: #171a21;
+  --text-secondary: #5b6270;
+  --border-subtle: #e4e7ec;
+
+  --accent-content: #5b5fef;
+  --accent-process: #12a594;
+  --accent-product: #f2a63f;
+  --accent-action: #171a21;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--text-primary);
+  background: var(--bg-base);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent-action);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .font-display {
+    font-family: var(--font-display), system-ui, sans-serif;
+  }
+
+  .font-mono-ui {
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+}
+
+/* Staggered kart belirişi */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Zorluk değeri pop */
+@keyframes value-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-value-pop {
+  animation: value-pop 0.2s ease-out;
+}
+
+/* Skeleton -> içerik cross-fade */
+@keyframes soft-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-soft-fade-in {
+  animation: soft-fade-in 0.35s ease-out both;
+}
+
+/* İmza öğesi: fork (ayrışma) animasyonu */
+@keyframes fork-trunk {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes fork-branch {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.fork-trunk {
+  transform-origin: top center;
+  animation: fork-trunk 0.3s ease-out both;
+}
+
+.fork-branch {
+  transform-origin: center top;
+  animation: fork-branch 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.28s;
+}
+
+/* Range input (slider) özel görünüm */
+input[type="range"].difficulty-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border-subtle);
+  outline: none;
+}
+
+input[type="range"].difficulty-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--thumb-color, var(--accent-action));
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 1px 3px rgba(23, 26, 33, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"].difficulty-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type="range"].difficulty-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--thumb-color, var(--accent-action));
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 1px 3px rgba(23, 26, 33, 0.25);
+  cursor: pointer;
+}
+
+input[type="range"].difficulty-range:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, FileType, Loader2 } from "lucide-react";
 import { exportToPdf, exportToWord, type ExportData } from "@/lib/exportUtils";
 
 interface ExportButtonsProps {
@@ -27,45 +28,38 @@ export default function ExportButtons({ data }: ExportButtonsProps) {
     }
   };
 
+  const btnClass =
+    "flex items-center gap-2 rounded-lg border border-subtle bg-surface px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-base focus-visible:ring-2 focus-visible:ring-action/40 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
     <div>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => handleExport("pdf")}
           disabled={loading !== null}
-          className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className={btnClass}
         >
           {loading === "pdf" ? (
-            <>
-              <span
-                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                aria-hidden="true"
-              />
-              PDF hazırlanıyor...
-            </>
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            "PDF olarak indir"
+            <FileText className="h-4 w-4" aria-hidden="true" />
           )}
+          PDF indir
         </button>
 
         <button
           type="button"
           onClick={() => handleExport("word")}
           disabled={loading !== null}
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className={btnClass}
         >
           {loading === "word" ? (
-            <>
-              <span
-                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                aria-hidden="true"
-              />
-              Word hazırlanıyor...
-            </>
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            "Word olarak indir"
+            <FileType className="h-4 w-4" aria-hidden="true" />
           )}
+          Word indir
         </button>
       </div>
       {error && (
