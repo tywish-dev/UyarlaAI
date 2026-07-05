@@ -4,6 +4,7 @@ import { useState } from "react";
 import ProfileForm from "@/components/ProfileForm";
 import PromptLibrary from "@/components/PromptLibrary";
 import TaskResultCard from "@/components/TaskResultCard";
+import ExportButtons from "@/components/ExportButtons";
 import type {
   AdaptTaskResponse,
   DifferentiatedTask,
@@ -223,11 +224,24 @@ export default function HomeContent() {
 
       {taskStates.length > 0 && (
         <section className="mt-10">
-          <h3 className="mb-1 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
-          <p className="mb-5 text-sm text-slate-500">
-            Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik önerisi
-            alabilirsiniz.
-          </p>
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="mb-1 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
+              <p className="text-sm text-slate-500">
+                Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik önerisi
+                alabilirsiniz.
+              </p>
+            </div>
+            {taskInput && (
+              <ExportButtons
+                data={{
+                  taskInput,
+                  tasks: taskStates.map((s) => s.task),
+                  rubrics: taskStates.map((s) => s.rubric),
+                }}
+              />
+            )}
+          </div>
           <div className="grid gap-4 lg:grid-cols-3">
             {taskStates.map((state, index) => (
               <TaskResultCard
