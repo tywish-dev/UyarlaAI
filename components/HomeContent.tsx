@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ProfileForm from "@/components/ProfileForm";
+import TaskResultCard from "@/components/TaskResultCard";
 import type { DifferentiatedTask, GenerateTasksResponse, TaskInput } from "@/types";
 
 export default function HomeContent() {
@@ -88,21 +89,13 @@ export default function HomeContent() {
 
       {tasks.length > 0 && (
         <section className="mt-10">
-          <h3 className="mb-4 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
+          <h3 className="mb-1 text-xl font-bold text-slate-900">Üretilen Görevler</h3>
+          <p className="mb-5 text-sm text-slate-500">
+            Tomlinson&apos;ın üç boyutuna göre farklılaştırılmış görevler.
+          </p>
           <div className="grid gap-4 lg:grid-cols-3">
             {tasks.map((task, index) => (
-              <div
-                key={`${task.dimension}-${index}`}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <span className="text-xs font-semibold uppercase tracking-wide text-primary-700">
-                  {task.dimension}
-                </span>
-                <h4 className="mt-1 font-semibold text-slate-900">{task.title}</h4>
-                <p className="mt-2 whitespace-pre-line text-sm text-slate-600">
-                  {task.description}
-                </p>
-              </div>
+              <TaskResultCard key={`${task.dimension}-${index}`} task={task} />
             ))}
           </div>
         </section>
