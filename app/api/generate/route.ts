@@ -3,29 +3,11 @@ import { runGroqCompletion } from "@/lib/groqClient";
 import { buildGeneratePrompt } from "@/lib/promptTemplates";
 import { parseJsonResponse } from "@/lib/parseJsonResponse";
 import { mapGroqError } from "@/lib/apiErrors";
-import type { GenerateTasksResponse, TaskInput } from "@/types";
+import { isValidTaskInput } from "@/lib/validation/lessonInput";
+import type { GenerateTasksResponse } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function isValidTaskInput(body: unknown): body is TaskInput {
-  if (typeof body !== "object" || body === null) return false;
-  const b = body as Record<string, unknown>;
-  const profile = b.studentProfile as Record<string, unknown> | undefined;
-  return (
-    typeof b.learningObjective === "string" &&
-    b.learningObjective.trim().length > 0 &&
-    typeof b.subject === "string" &&
-    b.subject.trim().length > 0 &&
-    typeof b.gradeLevel === "string" &&
-    b.gradeLevel.trim().length > 0 &&
-    typeof profile === "object" &&
-    profile !== null &&
-    typeof profile.readinessLevel === "string" &&
-    typeof profile.interestArea === "string" &&
-    typeof profile.learningPace === "string"
-  );
-}
 
 export async function POST(request: Request) {
   let body: unknown;

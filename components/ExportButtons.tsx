@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { FileText, FileType, Loader2 } from "lucide-react";
-import { exportToPdf, exportToWord, type ExportData } from "@/lib/exportUtils";
+import {
+  exportToPdf,
+  exportToWord,
+  type LessonPackageExportData,
+} from "@/lib/exportUtils";
 
 interface ExportButtonsProps {
-  data: ExportData;
+  data: LessonPackageExportData;
 }
 
 export default function ExportButtons({ data }: ExportButtonsProps) {

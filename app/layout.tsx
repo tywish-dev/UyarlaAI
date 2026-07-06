@@ -21,9 +21,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UyarlaAI — Farklılaştırılmış BT Görevleri",
+  title: "UyarlaAI — Ders Hazırlama Asistanı",
   description:
-    "Bilişim Teknolojileri öğretmenleri için yapay zeka destekli farklılaştırılmış görev üretim aracı",
+    "Bilişim Teknolojileri öğretmenleri için yapay zeka destekli ders hazırlama aracı: ders akışı, yönerge, görevler, çalışma kağıdı, sunum, rubrik ve ölçme",
 };
 
 export default function RootLayout({
@@ -53,7 +53,7 @@ export default function RootLayout({
                   UyarlaAI
                 </span>
               </div>
-              <span className="eyebrow hidden sm:inline">Tomlinson Çerçevesi</span>
+              <span className="eyebrow hidden sm:inline">TYMM · Tomlinson · Bloom</span>
             </div>
           </header>
 

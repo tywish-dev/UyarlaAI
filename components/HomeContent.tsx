@@ -3,17 +3,17 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import ProfileForm from "@/components/ProfileForm";
 import PromptLibrary from "@/components/PromptLibrary";
-import TaskResultCard from "@/components/TaskResultCard";
+import LessonPackageView from "@/components/LessonPackageView";
 import ExportButtons from "@/components/ExportButtons";
-import TaskSkeleton from "@/components/TaskSkeleton";
 import ForkDiagram from "@/components/ForkDiagram";
 import { DIMENSION_META } from "@/lib/dimensions";
 import type {
   AdaptTaskResponse,
   DifferentiatedTask,
-  GenerateTasksResponse,
+  GenerateLessonPackageResponse,
+  LessonInput,
+  LessonPackage,
   RubricResponse,
-  TaskInput,
 } from "@/types";
 
 interface TaskState {
@@ -29,8 +29,19 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return data?.error ?? fallback;
 }
 
+function buildTaskStatesFromPackage(pkg: LessonPackage): TaskState[] {
+  return pkg.tasks.map((task) => ({
+    task: { ...task, difficultyLevel: 3 },
+    rubric: [],
+    isReadapting: false,
+    isRubricLoading: false,
+    error: null,
+  }));
+}
+
 export default function HomeContent() {
-  const [taskInput, setTaskInput] = useState<TaskInput | null>(null);
+  const [lessonInput, setLessonInput] = useState<LessonInput | null>(null);
+  const [lessonPackage, setLessonPackage] = useState<LessonPackage | null>(null);
   const [extraContext, setExtraContext] = useState("");
   const [taskStates, setTaskStates] = useState<TaskState[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -38,10 +49,10 @@ export default function HomeContent() {
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if ((isGenerating || taskStates.length > 0) && resultsRef.current) {
+    if ((isGenerating || lessonPackage) && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [isGenerating, taskStates.length]);
+  }, [isGenerating, lessonPackage]);
 
   const updateTaskState = (index: number, patch: Partial<TaskState>) => {
     setTaskStates((prev) =>
@@ -49,14 +60,15 @@ export default function HomeContent() {
     );
   };
 
-  const handleSubmit = async (input: TaskInput) => {
+  const handleSubmit = async (input: LessonInput) => {
     setErrorMessage(null);
+    setLessonPackage(null);
     setTaskStates([]);
-    setTaskInput(input);
+    setLessonInput(input);
     setIsGenerating(true);
 
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch("/api/generate-lesson-package", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...input, extraContext }),
@@ -65,25 +77,18 @@ export default function HomeContent() {
       if (!response.ok) {
         const message = await readError(
           response,
-          "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+          "Ders paketi üretilirken bir hata oluştu. Lütfen tekrar deneyin."
         );
         setErrorMessage(message);
         return;
       }
 
-      const data = (await response.json()) as GenerateTasksResponse;
-      setTaskStates(
-        data.tasks.map((task) => ({
-          task: { ...task, difficultyLevel: 3 },
-          rubric: [],
-          isReadapting: false,
-          isRubricLoading: false,
-          error: null,
-        }))
-      );
+      const data = (await response.json()) as GenerateLessonPackageResponse;
+      setLessonPackage(data.package);
+      setTaskStates(buildTaskStatesFromPackage(data.package));
     } catch {
       setErrorMessage(
-        "Görevler üretilirken bir hata oluştu. Lütfen tekrar deneyin."
+        "Ders paketi üretilirken bir hata oluştu. Lütfen tekrar deneyin."
       );
     } finally {
       setIsGenerating(false);
@@ -101,7 +106,7 @@ export default function HomeContent() {
   };
 
   const handleReadapt = async (index: number) => {
-    if (!taskInput) return;
+    if (!lessonInput) return;
     const current = taskStates[index];
     updateTaskState(index, { isReadapting: true, error: null });
 
@@ -116,7 +121,7 @@ export default function HomeContent() {
             description: current.task.description,
           },
           difficultyLevel: current.task.difficultyLevel,
-          taskInput,
+          taskInput: lessonInput,
         }),
       });
 
@@ -155,7 +160,7 @@ export default function HomeContent() {
   };
 
   const handleGenerateRubric = async (index: number) => {
-    if (!taskInput) return;
+    if (!lessonInput) return;
     const current = taskStates[index];
     updateTaskState(index, { isRubricLoading: true, error: null });
 
@@ -169,7 +174,7 @@ export default function HomeContent() {
             title: current.task.title,
             description: current.task.description,
           },
-          taskInput,
+          taskInput: lessonInput,
         }),
       });
 
@@ -198,7 +203,7 @@ export default function HomeContent() {
 
   return (
     <>
-      <section className="mb-10 grid gap-3 sm:grid-cols-3">
+      <section className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(
           [
             {
@@ -213,9 +218,19 @@ export default function HomeContent() {
               key: "ürün" as const,
               desc: "Öğrencinin ortaya koyacağı çıktı türü çeşitlenir",
             },
+            {
+              key: "ortam" as const,
+              desc: "Öğrenme ortamı ve grup düzeni profille uyumlu tasarlanır",
+            },
           ]
         ).map(({ key, desc }) => {
-          const meta = DIMENSION_META[key];
+          const meta =
+            key === "ortam"
+              ? {
+                  label: "Ortam",
+                  color: "#64748b",
+                }
+              : DIMENSION_META[key];
           return (
             <div
               key={key}
@@ -265,58 +280,52 @@ export default function HomeContent() {
           <div className="mb-6">
             <ForkDiagram />
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <TaskSkeleton key={i} index={i} />
-            ))}
+          <div className="rounded-2xl border border-subtle bg-surface p-8 text-center shadow-card">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-action border-t-transparent" />
+            <p className="font-display text-lg font-bold text-ink">
+              Ders paketi hazırlanıyor...
+            </p>
+            <p className="mt-2 text-sm text-ink-secondary">
+              Ders akışı, yönerge, görevler, çalışma kağıdı, sunum, rubrik ve
+              ölçme soruları oluşturuluyor.
+            </p>
           </div>
         </section>
       )}
 
-      {!isGenerating && taskStates.length > 0 && (
+      {!isGenerating && lessonPackage && lessonInput && (
         <section className="mt-10">
           <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <span className="eyebrow">Sonuç</span>
               <h3 className="mt-1 font-display text-xl font-bold text-ink">
-                Üretilen Görevler
+                Ders Paketi
               </h3>
               <p className="mt-1 text-sm text-ink-secondary">
-                Zorluk seviyesini ayarlayıp yeniden uyarlayabilir veya rubrik
-                önerisi alabilirsiniz.
+                Tüm materyaller tek pakette. Sekmeler arasında gezinin veya
+                dışa aktarın.
               </p>
             </div>
-            {taskInput && (
-              <ExportButtons
-                data={{
-                  taskInput,
-                  tasks: taskStates.map((s) => s.task),
-                  rubrics: taskStates.map((s) => s.rubric),
-                }}
-              />
-            )}
+            <ExportButtons
+              data={{
+                lessonInput,
+                lessonPackage,
+                tasks: taskStates.map((s) => s.task),
+                taskRubrics: taskStates.map((s) => s.rubric),
+              }}
+            />
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {taskStates.map((state, index) => (
-              <div
-                key={`${state.task.dimension}-${index}`}
-                className="animate-card-enter"
-                style={{ animationDelay: `${index * 90}ms` } as CSSProperties}
-              >
-                <TaskResultCard
-                  task={state.task}
-                  onDifficultyChange={(value) =>
-                    handleDifficultyChange(index, value)
-                  }
-                  onReadapt={() => handleReadapt(index)}
-                  isReadapting={state.isReadapting}
-                  rubric={state.rubric}
-                  onGenerateRubric={() => handleGenerateRubric(index)}
-                  isRubricLoading={state.isRubricLoading}
-                  errorMessage={state.error}
-                />
-              </div>
-            ))}
+          <div
+            className="animate-card-enter"
+            style={{ animationDelay: "90ms" } as CSSProperties}
+          >
+            <LessonPackageView
+              lessonPackage={lessonPackage}
+              taskStates={taskStates}
+              onDifficultyChange={handleDifficultyChange}
+              onReadapt={handleReadapt}
+              onGenerateRubric={handleGenerateRubric}
+            />
           </div>
         </section>
       )}
